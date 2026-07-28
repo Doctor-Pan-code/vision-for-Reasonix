@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=64.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vision-for-reasonix"
+version = "1.0.0"
+description = "MCP Server — 为不支持识图的大模型补齐视觉能力，输出带坐标锚点的结构化图片描述"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+keywords = ["mcp", "vision", "image-recognition", "multi-modal"]
+
+dependencies = [
+    "mcp>=1.0.0",
+    "openai>=1.0.0",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.27.0",
+    "pillow>=10.0.0",
+]
+
+[project.scripts]
+vision-for-reasonix = "server:main"
+
+[tool.setuptools]
+py-modules = ["server"]
