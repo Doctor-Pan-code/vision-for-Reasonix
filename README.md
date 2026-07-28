@@ -13,7 +13,7 @@
 | 特性 | 说明 |
 |------|------|
 | 🖼️ **坐标锚点输出** | 识别对象位置，输出 bounding box（相对/绝对坐标），空间关系一目了然 |
-| 🌐 **多提供商支持** | SiliconFlow / OpenAI / ModelScope，环境变量一键切换 |
+| 🌐 **通用设计** | 兼容任何 OpenAI API 格式的视觉模型提供商，只需配 API 地址和 Key |
 | 📥 **灵活输入** | URL / Base64 / 本地路径，自动判断，无需手动指定类型 |
 | 📚 **批量识图** | 一次传入多张图片，统一分析 |
 | 🌍 **多语言输出** | 支持中文/英文/自动 |
@@ -31,63 +31,26 @@ uvx --from git+https://github.com/Doctor-Pan-code/vision-for-Reasonix vision-for
 
 ## 📋 环境变量
 
+只需配置 **3 个环境变量**，任何 OpenAI 兼容的视觉模型提供商都能直接用：
+
 | 变量 | 必填 | 说明 | 示例值 |
 |------|------|------|--------|
-| `VISION_PROVIDER` | ✅ | 视觉模型提供商 | `siliconflow` / `openai` / `modelscope` |
-| `SILICONFLOW_API_KEY` | ⚠️ | 硅基流动 API Key（提供商=siliconflow 时必填） | `sk-...` |
-| `OPENAI_API_KEY` | ⚠️ | OpenAI API Key（提供商=openai 时必填） | `sk-...` |
-| `MODELSCOPE_API_KEY` | ⚠️ | 魔搭 API Token（提供商=modelscope 时必填） | `ms-...` |
-| `VISION_MODEL` | ❌ | 指定视觉模型（不填则用各提供商默认模型） | `Qwen/Qwen2-VL-72B-Instruct` |
-| `VISION_BASE_URL` | ❌ | 自定义 API 地址（覆盖默认端点） | `https://..."` |
+| `VISION_API_KEY` | ✅ | 视觉模型提供商的 API Key | `sk-...` |
+| `VISION_BASE_URL` | ✅ | API 端点地址（需以 `/v1` 结尾） | `https://api.siliconflow.cn/v1` |
+| `VISION_MODEL` | ✅ | 使用的视觉模型 ID | `gpt-4o` / `Qwen/Qwen2-VL-72B-Instruct` |
 
----
+### 常见提供商配置速查
 
-## 🧠 模型选择
+| 提供商 | API 地址 (`VISION_BASE_URL`) | 示例模型 (`VISION_MODEL`) | 注册获取 Key |
+|--------|------------------------------|---------------------------|-------------|
+| **硅基流动** | `https://api.siliconflow.cn/v1` | `Qwen/Qwen2-VL-72B-Instruct`、`Qwen/Qwen-VL-Max`、`deepseek-ai/deepseek-vl2` | [cloud.siliconflow.cn](https://cloud.siliconflow.cn) |
+| **OpenAI** | `https://api.openai.com/v1` | `gpt-4o`、`gpt-4o-mini` | [platform.openai.com](https://platform.openai.com) |
+| **魔搭 ModelScope** | `https://api.modelscope.cn/v1` | `Qwen/Qwen2-VL-72B-Instruct`、`Qwen/Qwen-VL-Max` | [modelscope.cn](https://modelscope.cn) |
+| **DeepSeek** | `https://api.deepseek.com/v1` | `deepseek-vl2` | [platform.deepseek.com](https://platform.deepseek.com) |
+| **Google Gemini (OpenAI 兼容)** | `https://generativelanguage.googleapis.com/v1beta/openai` | `gemini-2.0-flash-exp` | [aistudio.google.com](https://aistudio.google.com) |
+| **任意 OpenAI 兼容 API** | 你的自建 API 地址 | 你的模型名 | — |
 
-### 各提供商默认模型
-
-| 提供商 | 默认模型 |
-|--------|---------|
-| **SiliconFlow** | `Qwen/Qwen2-VL-72B-Instruct` |
-| **OpenAI** | `gpt-4o` |
-| **ModelScope** | `Qwen/Qwen2-VL-72B-Instruct` |
-
-### 如何指定模型？
-
-通过 `VISION_MODEL` 环境变量设置，比如在 Reasonix 配置中：
-
-```json
-"VISION_MODEL": "Qwen/Qwen-VL-Max"
-```
-
-### 硅基流动可用视觉模型
-
-以下是硅基流动平台当前主流的视觉模型，你可以根据需要切换：
-
-| 模型 ID | 说明 |
-|---------|------|
-| `Qwen/Qwen2-VL-72B-Instruct` | ⭐ 默认，通义千问最新视觉模型，识图能力强 |
-| `Qwen/Qwen-VL-Max` | 通义千问视觉增强版，支持更复杂的视觉理解 |
-| `Qwen/Qwen-VL-Plus` | 通义千问视觉标准版，速度更快 |
-| `deepseek-ai/deepseek-vl2` | DeepSeek-VL2 多模态模型 |
-| `Pro/Qwen/Qwen2-VL-7B-Instruct` | 轻量版 7B 模型，速度更快 |
-
-> 硅基流动视觉模型列表请参考官方文档：[硅基流动模型列表](https://docs.siliconflow.cn/docs/model-list)
-
-### OpenAI 可用视觉模型
-
-| 模型 ID | 说明 |
-|---------|------|
-| `gpt-4o` | ⭐ 默认，最强多模态，支持坐标定位 |
-| `gpt-4o-mini` | 轻量版，速度更快 |
-| `gpt-4-turbo` | 上一代视觉模型 |
-
-### 魔搭可用视觉模型
-
-| 模型 ID | 说明 |
-|---------|------|
-| `Qwen/Qwen2-VL-72B-Instruct` | ⭐ 默认，通义千问最新视觉模型 |
-| `Qwen/Qwen-VL-Max` | 通义千问视觉增强版 |
+> 💡 用哪个提供商就把 `VISION_BASE_URL` 和 `VISION_API_KEY` 换成对应的值，`VISION_MODEL` 填该平台支持的视觉模型 ID。
 
 ---
 
@@ -142,7 +105,7 @@ analyze_image(
 
 ## 💻 客户端配置
 
-### 硅基流动示例
+### 通用配置（填入你的提供商信息）
 
 ```json
 {
@@ -151,8 +114,8 @@ analyze_image(
       "command": "uvx",
       "args": ["--from", "git+https://github.com/Doctor-Pan-code/vision-for-Reasonix", "vision-for-reasonix"],
       "env": {
-        "VISION_PROVIDER": "siliconflow",
-        "SILICONFLOW_API_KEY": "你的硅基流动API Key",
+        "VISION_API_KEY": "你的API Key",
+        "VISION_BASE_URL": "https://api.siliconflow.cn/v1",
         "VISION_MODEL": "Qwen/Qwen2-VL-72B-Instruct"
       }
     }
@@ -160,25 +123,14 @@ analyze_image(
 }
 ```
 
-### OpenAI 示例
+### 按需替换示例
 
-```json
-{
-  "mcpServers": {
-    "vision-for-reasonix": {
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/Doctor-Pan-code/vision-for-Reasonix", "vision-for-reasonix"],
-      "env": {
-        "VISION_PROVIDER": "openai",
-        "OPENAI_API_KEY": "你的OpenAI API Key",
-        "VISION_MODEL": "gpt-4o"
-      }
-    }
-  }
-}
-```
-
-> 💡 **不填 `VISION_MODEL` 则使用各提供商的默认模型**，但建议显式指定，避免意外切换。
+| 你想用 | 改这3个值 |
+|--------|----------|
+| **硅基流动** | `VISION_BASE_URL`=`https://api.siliconflow.cn/v1`，`VISION_MODEL`=`Qwen/Qwen2-VL-72B-Instruct` |
+| **OpenAI** | `VISION_BASE_URL`=`https://api.openai.com/v1`，`VISION_MODEL`=`gpt-4o` |
+| **魔搭** | `VISION_BASE_URL`=`https://api.modelscope.cn/v1`，`VISION_MODEL`=`Qwen/Qwen2-VL-72B-Instruct` |
+| **自建 API** | `VISION_BASE_URL`=`https://你的域名/v1`，`VISION_MODEL`=`你的模型` |
 
 ### Claude Desktop / Cursor
 
@@ -198,10 +150,10 @@ pip install mcp openai python-dotenv httpx pillow
 ### 2. 配置环境变量
 
 ```bash
-# Windows PowerShell
-$env:VISION_PROVIDER="siliconflow"
-$env:SILICONFLOW_API_KEY="你的硅基流动APIKey"
-$env:VISION_MODEL="Qwen/Qwen2-VL-72B-Instruct"
+# Windows PowerShell（以硅基流动为例）
+$env:VISION_API_KEY = "你的API Key"
+$env:VISION_BASE_URL = "https://api.siliconflow.cn/v1"
+$env:VISION_MODEL = "Qwen/Qwen2-VL-72B-Instruct"
 ```
 
 ### 3. 使用 MCP Inspector 测试（推荐）
@@ -210,7 +162,7 @@ $env:VISION_MODEL="Qwen/Qwen2-VL-72B-Instruct"
 npx @modelcontextprotocol/inspector uv run server.py
 ```
 
-Inspector 启动后打开 `http://localhost:5173`，点击左侧 `analyze_image` 工具，填入参数测试：
+启动后打开 `http://localhost:5173`，点击左侧 `analyze_image` 工具测试：
 
 | 参数 | 示例值 |
 |------|--------|
@@ -233,10 +185,10 @@ python server.py --transport sse --host 0.0.0.0 --port 9876
 
 ## ☁️ 部署到魔搭 Hosted
 
-1. 将代码上传到 GitHub 仓库（已完成）
+1. 代码已在 GitHub 仓库
 2. 在魔搭 MCP 广场提交你的 MCP Server
 3. 部署时选择 `sse` 传输模式
-4. 在环境变量中配置 API Key
+4. 在环境变量中填入 `VISION_API_KEY`、`VISION_BASE_URL`、`VISION_MODEL`
 
 ---
 

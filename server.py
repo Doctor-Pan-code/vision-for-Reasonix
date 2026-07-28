@@ -2,14 +2,13 @@
 vision-for-reasonix — MCP Server
 为不支持识图的大模型补齐视觉能力，输出带坐标锚点的结构化图片描述。
 
-支持提供商:
-  - SiliconFlow (硅基流动)
-  - OpenAI (GPT-4o 系列)
-  - ModelScope (魔搭)
+通用设计：兼容任何 OpenAI API 格式的视觉模型提供商，
+只需配置 API Key、API 地址和模型名即可使用。
 
 使用:
-  export VISION_PROVIDER=openai
-  export OPENAI_API_KEY=sk-...
+  export VISION_API_KEY=sk-...
+  export VISION_BASE_URL=https://api.openai.com/v1
+  export VISION_MODEL=gpt-4o
   python server.py
 """
 
@@ -30,57 +29,11 @@ import httpx
 load_dotenv()
 
 # ============================================================
-# 提供商预设
+# 环境变量（三个必填，完全由用户指定）
 # ============================================================
-PROVIDER_PRESETS = {
-    "siliconflow": {
-        "base_url": "https://api.siliconflow.cn/v1",
-        "description": "硅基流动",
-        "api_key_env": "SILICONFLOW_API_KEY",
-        "default_model": "Qwen/Qwen2-VL-72B-Instruct",
-        "example_models": [
-            "Qwen/Qwen2-VL-72B-Instruct",
-            "Qwen/Qwen-VL-Max",
-            "Qwen/Qwen-VL-Plus",
-            "deepseek-ai/deepseek-vl2",
-        ],
-    },
-    "openai": {
-        "base_url": "https://api.openai.com/v1",
-        "description": "OpenAI",
-        "api_key_env": "OPENAI_API_KEY",
-        "default_model": "gpt-4o",
-        "example_models": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"],
-    },
-    "modelscope": {
-        "base_url": "https://api.modelscope.cn/v1",
-        "description": "魔搭 ModelScope",
-        "api_key_env": "MODELSCOPE_API_KEY",
-        "default_model": "Qwen/Qwen2-VL-72B-Instruct",
-        "example_models": [
-            "Qwen/Qwen2-VL-72B-Instruct",
-            "Qwen/Qwen-VL-Max",
-        ],
-    },
-}
-
-# ============================================================
-# 环境变量
-# ============================================================
-VISION_PROVIDER = os.getenv("VISION_PROVIDER", "openai").lower()
-
-if VISION_PROVIDER not in PROVIDER_PRESETS:
-    available = ", ".join(PROVIDER_PRESETS.keys())
-    print(
-        f"警告: 不支持的提供商 '{VISION_PROVIDER}'，可选: {available}，已回退到 'openai'",
-        file=sys.stderr,
-    )
-    VISION_PROVIDER = "openai"
-
-PROVIDER_CFG = PROVIDER_PRESETS[VISION_PROVIDER]
-API_KEY = os.getenv(PROVIDER_CFG["api_key_env"])
-BASE_URL = os.getenv("VISION_BASE_URL", "") or PROVIDER_CFG["base_url"]
-VISION_MODEL = os.getenv("VISION_MODEL", "") or PROVIDER_CFG["default_model"]
+VISION_API_KEY = os.getenv("VISION_API_KEY", "")
+VISION_BASE_URL = os.getenv("VISION_BASE_URL", "").rstrip("/")
+VISION_MODEL = os.getenv("VISION_MODEL", "")
 
 # 单张图片最大 20MB
 MAX_IMAGE_SIZE = 20 * 1024 * 1024
@@ -276,13 +229,15 @@ def _build_image_content(
 
 def _get_client() -> OpenAI:
     """获取 OpenAI 客户端实例"""
-    if not API_KEY:
-        env_name = PROVIDER_CFG["api_key_env"]
+    if not VISION_API_KEY:
         raise ValueError(
-            f"缺少 API Key: 请设置环境变量 {env_name}\n"
-            f"或切换提供商后设置对应的 Key (VISION_PROVIDER={VISION_PROVIDER})"
+            f"缺少 VISION_API_KEY，请在环境变量或 .env 文件中设置"
         )
-    return OpenAI(api_key=API_KEY, base_url=BASE_URL)
+    if not VISION_BASE_URL:
+        raise ValueError(
+            f"缺少 VISION_BASE_URL，请在环境变量或 .env 文件中设置"
+        )
+    return OpenAI(api_key=VISION_API_KEY, base_url=VISION_BASE_URL)
 
 
 def _parse_model_response(content: str) -> dict:
@@ -353,8 +308,8 @@ mcp = FastMCP(
     instructions=(
         "视觉识别 MCP Server — 为大模型提供图片分析能力。\n"
         "支持多模态视觉模型，可识别图片中的对象及其位置坐标。\n"
-        f"当前提供商: {PROVIDER_CFG['description']} ({PROVIDER_CFG['base_url']})\n"
-        f"当前模型: {VISION_MODEL}"
+        f"API 地址: {VISION_BASE_URL or '(未配置)'}\n"
+        f"当前模型: {VISION_MODEL or '(未配置)'}"
     ),
 )
 
@@ -473,18 +428,17 @@ def main():
     args = parser.parse_args()
 
     # 启动前校验
-    if not API_KEY:
-        env_name = PROVIDER_CFG["api_key_env"]
+    if not VISION_API_KEY:
         print(
-            f"⚠ 警告: 环境变量 {env_name} 未设置，API 调用将失败\n"
+            f"⚠ 警告: 环境变量 VISION_API_KEY 未设置，API 调用将失败\n"
             f"  请设置环境变量或在 .env 文件中配置",
             file=sys.stderr,
         )
 
     print(
         f"🚀 vision-for-reasonix 启动\n"
-        f"   提供商: {PROVIDER_CFG['description']}\n"
-        f"   模型: {VISION_MODEL}\n"
+        f"   API 地址: {VISION_BASE_URL or '(未配置)'}\n"
+        f"   模型: {VISION_MODEL or '(未配置)'}\n"
         f"   传输: {args.transport}\n",
         file=sys.stderr,
     )
